@@ -1,17 +1,21 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QApplication
 from PySide6.QtGui import QFont, QDrag
 from PySide6.QtCore import Qt, QMimeData, QByteArray, QPoint
-from ComfyGUI.editor.view import ComfyGUIView
-from ComfyGUI.editor.scene import ComfyGUIScene
-from ComfyGUI.editor.nodes.model_node import MSSTModelNode, VRModelNode
-from ComfyGUI.editor.nodes.data_flow_node import InputNode, OutputNode
+from view import ComfyGUIView
+from scene import ComfyGUIScene
+from nodes.model_node import MSSTModelNode, VRModelNode
+from nodes.data_flow_node import InputNode, OutputNode
 import json
+import os
 
 
 class ComfyGUIEditor(QWidget):
     def __init__(self, parent = None):
         super().__init__(parent)
         self.node_position_offset = 100
+        print(os.getcwd())
+        os.chdir('.\\')
+        print(os.getcwd())
         self.msst_model_data = self.load_json('.\\data\\msst_model_map.json')
         self.vr_model_data = self.load_json('.\\data\\vr_model_map.json')
         self.setup_editor()
@@ -23,7 +27,7 @@ class ComfyGUIEditor(QWidget):
 
     def setup_editor(self):
         # 设置窗口大小和标题
-        self.setGeometry(300, 200, 720, 720)
+        self.setGeometry(300, 200, 1440, 1080)
         self.setWindowTitle("ComfyMSS Editor")
 
         # 创建主布局

@@ -5,7 +5,7 @@ sys.path.append('.')
 from PySide6.QtWidgets import QGraphicsItem, QLineEdit, QGraphicsProxyWidget, QCheckBox
 from PySide6.QtGui import QColor, QPen, QBrush, QPainter, QFont, QFontMetrics
 from PySide6.QtCore import Qt, QRectF, QPointF
-from ComfyGUI.editor.config import EditorConfig, NodeConfig
+from config import EditorConfig, NodeConfig
 
 
 class NodePort(QGraphicsItem):

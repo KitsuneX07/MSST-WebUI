@@ -6,7 +6,7 @@ sys.path.append('.')
 from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtGui import QBrush, QColor, QPen, QPainter
 from PySide6.QtCore import Qt, QLine
-from ComfyGUI.editor.config import EditorConfig
+from config import EditorConfig
 
 
 class ComfyGUIScene(QGraphicsScene):

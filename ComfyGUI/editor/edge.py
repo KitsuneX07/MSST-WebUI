@@ -5,7 +5,7 @@
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsPathItem, QGraphicsDropShadowEffect
 from PySide6.QtGui import QPen, QColor, QPainterPath, QPainter
 from PySide6.QtCore import Qt, QPointF
-from ComfyGUI.editor.node_port import NodePort
+from node_port import NodePort
 
 
 class BaseEdge(QGraphicsPathItem):

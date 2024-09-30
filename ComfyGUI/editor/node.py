@@ -5,8 +5,8 @@ sys.path.append('.')
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsTextItem, QGraphicsDropShadowEffect
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter, QPen, QColor, QBrush, QPainterPath, QFont
-from ComfyGUI.editor.node_port import NodePort, InputPort, OutputPort, ParamPort, BoolPort
-from ComfyGUI.editor.config import EditorConfig, NodeConfig
+from node_port import NodePort, InputPort, OutputPort, ParamPort, BoolPort
+from config import EditorConfig, NodeConfig
 
 
 class Node(QGraphicsItem):

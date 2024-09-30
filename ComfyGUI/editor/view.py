@@ -1,11 +1,11 @@
 from PySide6.QtWidgets import QGraphicsView, QMenu
 from PySide6.QtGui import QPainter, QMouseEvent, QKeyEvent, QDragEnterEvent, QDragMoveEvent, QFont
 from PySide6.QtCore import Qt, QEvent, QPointF
-from ComfyGUI.editor.edge import NodeEdge, DraggingEdge
-from ComfyGUI.editor.node import Node
-from ComfyGUI.editor.node_port import NodePort
-from ComfyGUI.editor.nodes.model_node import MSSTModelNode, VRModelNode
-from ComfyGUI.editor.nodes.data_flow_node import InputNode, OutputNode
+from edge import NodeEdge, DraggingEdge
+from node import Node
+from node_port import NodePort
+from nodes.model_node import MSSTModelNode, VRModelNode
+from nodes.data_flow_node import InputNode, OutputNode
 import json
 
 
