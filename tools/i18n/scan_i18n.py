@@ -20,7 +20,7 @@ def save_to_json(data, output_file):
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-file_path = "E:\\vs\\MSST-WebUI\\webUI.py"
-output_file = "E:\\vs\\MSST-WebUI\\tools\\i18n\\locale\\template.json"
+file_path = "E:/vs/MSST-WebUI/webUI.py"
+output_file = "E:/vs/MSST-WebUI/tools/i18n/locale/template.json"
 i18n_dict = process_py_file(file_path)
 save_to_json(i18n_dict, output_file)

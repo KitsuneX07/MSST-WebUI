@@ -303,7 +303,7 @@ class ComfyVRSeparator(VRSeparator):
         self.primary_source = None
         self.secondary_source = None
 
-        with open("data\\vr_model_map.json", 'r') as f:
+        with open("data/vr_model_map.json", 'r') as f:
             model_map = json.load(f)
 
         self.primary_stem_name = model_map[self.model_name + '.pth']["primary_stem"]

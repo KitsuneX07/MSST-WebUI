@@ -41,8 +41,8 @@ UNOFFICIAL_MODEL = "config_unofficial"
 VR_MODELPARAMS = "configs/vr_modelparams"
 MODEL_TYPE = ['bs_roformer', 'mel_band_roformer', 'segm_models', 'htdemucs', 'mdx23c', 'swin_upernet', 'bandit', 'bandit_v2', 'scnet', 'scnet_unofficial', 'torchseg']
 MODEL_CHOICES = ["vocal_models", "multi_stem_models", "single_stem_models", "UVR_VR_Models"]
-FFMPEG = ".\\ffmpeg\\bin\\ffmpeg.exe" if os.path.isfile(".\\ffmpeg\\bin\\ffmpeg.exe") else "ffmpeg"
-PYTHON = ".\\workenv\\python.exe" if os.path.isfile(".\\workenv\\python.exe") else sys.executable
+FFMPEG = "./ffmpeg/bin/ffmpeg.exe" if os.path.isfile("./ffmpeg/bin/ffmpeg.exe") else "ffmpeg"
+PYTHON = "./workenv/python.exe" if os.path.isfile("./workenv/python.exe") else sys.executable
 
 warnings.filterwarnings("ignore")
 stop_all_threads = False
