@@ -76,7 +76,8 @@ class NodePort(QGraphicsItem):
 
     def remove_edge(self):
         if self.port_type == NodePort.PORT_TYPE_INPUT:
-            self.connected_ports[0].parent_node.downstream_nodes.remove(self.parent_node)
+            if len(self.connected_ports):
+                self.connected_ports[0].parent_node.downstream_nodes.remove(self.parent_node)
         for edge in self.edges:
             print('Removing edge:', edge)
             self.parent_node._scene.removeItem(edge)

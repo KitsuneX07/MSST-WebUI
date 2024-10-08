@@ -210,7 +210,6 @@ class ComfyUIView(QGraphicsView):
                 model_name = model_info.get("name")
                 new_node = VRModelNode(model_class = model_class, model_name = model_name)
             else:
-                model_class = model_info.get("model_class")
                 model_type = model_info.get("model_type")
                 model_name = model_info.get("name")
                 new_node = MSSTModelNode(model_class = model_class, model_name = model_name, model_type = model_type)
