@@ -20,7 +20,7 @@ class NodePort(QGraphicsItem):
         self.port_pos = None
         self.parent_node = None
         self._scene = None
-        self._port_label = port_label  # 端口标签
+        self.port_label = port_label  # 端口标签
         self._port_color = port_color  # 端口颜色
         self.port_type = port_type  # 端口类型：输入、输出、参数、布尔类型
 
@@ -33,7 +33,7 @@ class NodePort(QGraphicsItem):
         self._port_font = QFont(EditorConfig.editor_node_pin_label_font, EditorConfig.editor_node_pin_label_size)
         self._font_metrics = QFontMetrics(self._port_font)
         self._port_icon_size = NodeConfig.port_icon_size  # 端口图标大小
-        self._port_label_size = self._font_metrics.horizontalAdvance(self._port_label)  # 端口标签宽度
+        self._port_label_size = self._font_metrics.horizontalAdvance(self.port_label)  # 端口标签宽度
         self._port_width = self._port_icon_size + self._port_label_size  # 端口宽度
 
         self.port_value = None  # 端口值
@@ -68,15 +68,15 @@ class NodePort(QGraphicsItem):
         if self.port_type == NodePort.PORT_TYPE_INPUT:
             self.edges.append(edge)
             self.connected_ports.append(connected_port)
-            self.parent_node.upstream_node = connected_port.parent_node
-            self.parent_node.upstream_edges.append(edge)
         else:
             self.edges.append(edge)
             self.connected_ports.append(connected_port)
-            connected_port.parent_node.upstream_node = self.parent_node
-            connected_port.parent_node.upstream_edges.append(edge)
+            self.parent_node.downstream_nodes.append(connected_port.parent_node)
+            self.parent_node.downstream_edges.append(edge)
 
     def remove_edge(self):
+        if self.port_type == NodePort.PORT_TYPE_INPUT:
+            self.connected_ports[0].parent_node.downstream_nodes.remove(self.parent_node)
         for edge in self.edges:
             print('Removing edge:', edge)
             self.parent_node._scene.removeItem(edge)
@@ -117,7 +117,7 @@ class InputPort(NodePort):
 
         painter.setFont(self._port_font)
         painter.drawText(QRectF(self._port_icon_size + 5, 0, self._port_label_size, self._port_icon_size),
-                         Qt.AlignLeft | Qt.AlignVCenter, self._port_label)
+                         Qt.AlignLeft | Qt.AlignVCenter, self.port_label)
 
 
 class OutputPort(NodePort):
@@ -129,7 +129,7 @@ class OutputPort(NodePort):
         painter.setPen(self._pen_default)
         painter.setFont(self._port_font)
         painter.drawText(QRectF(0, 0, self._port_label_size, self._port_icon_size),
-                         Qt.AlignRight | Qt.AlignVCenter, self._port_label)
+                         Qt.AlignRight | Qt.AlignVCenter, self.port_label)
 
         square = QRectF(self._port_label_size + 5, 0, self._port_icon_size, self._port_icon_size)
         painter.setPen(self._pen_default)
@@ -154,15 +154,18 @@ class ParamPort(NodePort):
                          parent = parent)
 
         self._default_value = default_value
+        self.port_value = self._default_value
+        self.has_value_set = True
         self._line_edit = QLineEdit()
         self._line_edit.setText(str(self._default_value))
 
         self._proxy_widget = QGraphicsProxyWidget(self)
         self._proxy_widget.setWidget(self._line_edit)
 
-        self._port_label_size = self._font_metrics.horizontalAdvance(self._port_label)
+        self._port_label_size = self._font_metrics.horizontalAdvance(self.port_label)
         self._port_textbox_width = 100
         self._port_width = self._port_label_size + self._port_textbox_width
+        self._line_edit.textChanged.connect(self.update_value)
 
     def boundingRect(self) -> QRectF:
         return QRectF(0, 0, self._port_width, self._port_icon_size)
@@ -171,13 +174,19 @@ class ParamPort(NodePort):
         painter.setPen(self._pen_default)
         painter.setFont(self._port_font)
         painter.drawText(QRectF(0, 0, self._port_label_size, self._port_icon_size),
-                         Qt.AlignLeft | Qt.AlignVCenter, self._port_label)
+                         Qt.AlignLeft | Qt.AlignVCenter, self.port_label)
 
         self._proxy_widget.setGeometry(
             QRectF(self._port_label_size + 5, 0, self._port_textbox_width, self._port_icon_size))
 
     def get_value(self):
         return self._line_edit.text()
+    
+    def update_value(self):
+        self.port_value = self._line_edit.text()
+        self.has_value_set = True
+
+    
 
 
 class BoolPort(NodePort):
@@ -196,7 +205,7 @@ class BoolPort(NodePort):
         self._proxy_widget = QGraphicsProxyWidget(self)
         self._proxy_widget.setWidget(self._checkbox)
 
-        self._port_label_size = self._font_metrics.horizontalAdvance(self._port_label)
+        self._port_label_size = self._font_metrics.horizontalAdvance(self.port_label)
         self._port_checkbox_width = self._checkbox.sizeHint().width()  # 根据复选框大小调整
 
         # 重新计算端口宽度
@@ -211,7 +220,7 @@ class BoolPort(NodePort):
 
         # 绘制端口标签
         painter.drawText(QRectF(0, 0, self._port_label_size, self._port_icon_size),
-                         Qt.AlignLeft | Qt.AlignVCenter, self._port_label)
+                         Qt.AlignLeft | Qt.AlignVCenter, self.port_label)
 
         # 设置复选框位置
         self._proxy_widget.setGeometry(

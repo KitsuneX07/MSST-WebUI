@@ -3,8 +3,8 @@ from PySide6.QtGui import QPainter, QMouseEvent, QKeyEvent, QDragEnterEvent, QDr
 from PySide6.QtCore import Qt, QEvent, QPointF
 from edge import NodeEdge, DraggingEdge
 from node import Node
-from node_port import NodePort
-from nodes.model_node import MSSTModelNode, VRModelNode
+from node_port import NodePort, InputPort, OutputPort
+from nodes.model_node import MSSTModelNode, VRModelNode, ModelNode
 from nodes.data_flow_node import InputNode, OutputNode
 import json
 
@@ -15,6 +15,7 @@ class ComfyUIView(QGraphicsView):
         self._scene = scene
         self.edges = []
         self.nodes = []
+        self.input_node = None
         self.setScene(self._scene)
         self._scene.set_view(self)
 
@@ -131,7 +132,9 @@ class ComfyUIView(QGraphicsView):
     def left_button_pressed(self, event: QMouseEvent):
         mouse_pos = event.pos()
         item = self.itemAt(mouse_pos)
-        if isinstance(item, NodePort):
+        # print('Item:', item.__class__.__name__)
+        if item.__class__.__name__ == 'OutputPort' or item.__class__.__name__ == 'InputPort':
+            print('Dragging edge')
             self._drag_edge_mode = True
             self.create_dragging_edge(item)
         else:
@@ -157,7 +160,7 @@ class ComfyUIView(QGraphicsView):
         if self._drag_edge_mode:
             self._drag_edge_mode = False
             item = self.itemAt(event.pos())
-            if isinstance(item, NodePort):
+            if item.__class__.__name__ == 'OutputPort' or item.__class__.__name__ == 'InputPort':
                 self._drag_edge.set_second_port(item)
                 edge = self._drag_edge.create_node_edge()
                 if edge is not None:
@@ -194,7 +197,11 @@ class ComfyUIView(QGraphicsView):
 
         if isinstance(model_info, str):
             if model_info == "InputNode":
-                new_node = InputNode()
+                if self.input_node is not None:
+                    raise Exception("Input node already exists")
+                else:
+                    new_node = InputNode()
+                    self.input_node = new_node     
             elif model_info == "OutputNode":
                 new_node = OutputNode()
         else:
@@ -213,18 +220,59 @@ class ComfyUIView(QGraphicsView):
     def remove_selected_items(self):
         selected_items = self._scene.selectedItems()
         for item in selected_items:
-            if isinstance(item, NodeEdge):
+            if item in self.edges:
                 self.edges.remove(item)
                 item.update()
-            elif isinstance(item, Node):
+            elif item in self.nodes:
+                if item == self.input_node:
+                    self.input_node = None
                 item.remove_edge()
                 self.nodes.remove(item)
                 item.update()
             self._scene.removeItem(item)
+            
+    def clear_editor(self):
+        for item in self._scene.items():
+            self._scene.removeItem(item)
+        self.edges = []
+        self.nodes = []
+        self.input_node = None
+        
+    def debug(self):
+        for node in self.nodes:
+            print('Node:')
+            print(node.index)
+            print(node)
+            print(node.downstream_nodes)
+            print(node.downstream_edges)
+            print('\n')
+
 
     def contextMenuEvent(self, event):
         context_menu = QMenu(self)
         context_menu.setFont(QFont("Consolas", 10))
         context_menu.addAction("删除选定项", self.remove_selected_items)
+        context_menu.addAction("重置缩放", self.reset_scale)
+        context_menu.addAction("清空编辑器", self.clear_editor)
+        context_menu.addAction("运行", self.run)
+        context_menu.addAction("debug", self.debug)
 
         context_menu.exec(event.globalPos())
+
+    def run(self):
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logging.info('Running editor')
+        if self.input_node is None:
+            logging.error('No input node was added!')
+            return
+
+        def dfs(node: Node):
+            if node is None:
+                return
+            node.run()
+            for downstream_node in node.downstream_nodes:
+                dfs(downstream_node)
+
+        dfs(self.input_node)
+            

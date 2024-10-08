@@ -7,6 +7,7 @@ from nodes.model_node import MSSTModelNode, VRModelNode
 from nodes.data_flow_node import InputNode, OutputNode
 import json
 import os
+import shutil
 
 
 class ComfyUIEditor(QWidget):
@@ -14,6 +15,10 @@ class ComfyUIEditor(QWidget):
         super().__init__(parent)
         self.node_position_offset = 100
         print(os.getcwd())
+        if not os.path.exists('./data'):
+            shutil.copytree("data_backup", "data")
+        if not os.path.exists('./configs'):
+            shutil.copytree("configs_backup", "configs")    
         self.msst_model_data = self.load_json('./data/msst_model_map.json')
         self.vr_model_data = self.load_json('./data/vr_model_map.json')
         self.setup_editor()

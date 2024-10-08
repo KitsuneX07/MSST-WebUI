@@ -39,7 +39,7 @@ def load_audio(audio_file: str):
 
 
 def save_audio(audio, sr: int, audio_type: str, file_name: str, store_dir: str) -> None:
-    if not os.path.isdir(store_dir):
+    if not os.path.exists(store_dir):
         os.makedirs(store_dir)
     if audio_type.lower() == 'flac':
         file = os.path.join(store_dir, file_name + '.flac')
@@ -61,7 +61,6 @@ class ComfyMSST:
             device=None,
             output_format='wav',
             use_tta=False,
-            normalize=False,
             store_dirs=None
     ):
 
@@ -76,8 +75,7 @@ class ComfyMSST:
         self.config_path = config_path
         self.model_path = model_path
         self.output_format = output_format
-        self.use_tta = use_tta
-        self.normalize = normalize
+        self.use_tta = use_tta if use_tta is not None else False
         self.store_dirs = store_dirs if store_dirs else {}
 
         if device not in ['cpu', 'cuda', 'mps']:
@@ -121,9 +119,10 @@ class ComfyMSST:
                 results = self.separate(path)
                 file_name, _ = os.path.splitext(os.path.basename(path))
                 for instr in self.config.training.instruments:  # 使用模型的乐器信息
-                    save_dir = self.store_dirs.get(instr)
-                    if save_dir:  # 只有在 save_dir 不为空或 None 时才保存
-                        save_audio(results[instr], 44100, self.output_format, f"{file_name}_{instr}", save_dir)
+                    save_dir_list = self.store_dirs.get(instr)
+                    if save_dir_list and len(save_dir_list) > 0:  # 只有在 save_dir 不为空或 None 时才保存
+                        for save_dir in save_dir_list:
+                            save_audio(results[instr], 44100, self.output_format, f"{file_name}_{instr}", save_dir)
             except Exception as e:
                 logger.warning('Cannot process track: {}'.format(path))
                 logger.warning('Error message: {}'.format(str(e)))

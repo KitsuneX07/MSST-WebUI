@@ -69,6 +69,8 @@ class ModelNode(Node):
         self.init_title()
         self.update_ports()
         self.setup_output_format_selector()
+        self.store_dirs = {}
+        self.input_path = None
 
     def init_node_color(self):
         self._pen_selected = QPen(QColor('#ddffee00'))
@@ -135,9 +137,9 @@ class ModelNode(Node):
         # Create a group box for output format selection
         self.output_format_group = QGroupBox()
 
-        # Set font size to be -5 of other components
+        # Set font size to be -6 of other components
         font = self.output_format_group.font()
-        font.setPointSize(EditorConfig.editor_node_title_font_size - 5)
+        font.setPointSize(EditorConfig.editor_node_title_font_size - 6)
         self.output_format_group.setFont(font)
         self.output_format_group.setAttribute(Qt.WA_TranslucentBackground)
         self.output_format_group.setStyleSheet("QGroupBox { border: 0; }")
@@ -222,74 +224,65 @@ class MSSTModelNode(ModelNode):
         # print('bool_ports:', self.bool_ports)
 
     def run(self):
-        try:
-            # 更新配置文件中的数值
-            logger.info("Updating parameters...")
-            for param_port in self.param_ports:
-                self._config.inference[param_port.port_label] = param_port.port_value
-                logger,info(f"Previous value of {param_port.port_label}: {self._config.inference[param_port.port_label]}, ",
-                            f"changed to {param_port.port_value}")
+        logger.info(f"Running MSST model node {self._model_name}...")
+        # 更新配置文件中的数值
+        logger.info("Updating parameters...")
+        for param_port in self.param_ports:
+            self._config.inference[param_port.port_label] = param_port.port_value
+            logger.info(f"Previous value of {param_port.port_label}: {self._config.inference[param_port.port_label]}, ",
+                        f"changed to {param_port.port_value}")
 
-            for bool_port in self.bool_ports:
-                if bool_port._port_label == "Normalize":
-                    self._config.inference['normalize'] = bool_port.port_value
-                    logger.info(f"Previous value of Normalize: {self._config.inference['normalize']}, ",
-                                f"changed to {bool_port.port_value}")
-                elif bool_port._port_label == "Use TTA":
-                    use_tta = bool_port.port_value
+        for bool_port in self.bool_ports:
+            if bool_port.port_label == "Normalize":
+                self._config.inference['normalize'] = bool_port.port_value
+                logger.info(f"Previous value of Normalize: {self._config.inference['normalize']}, ",
+                            f"changed to {bool_port.port_value}")
+            elif bool_port.port_label == "Use TTA":
+                use_tta = bool_port.port_value
 
-            # 保存更新后的配置到文件
-            with open(self._config_path, 'w') as f:
-                if self._model_type == 'htdemucs':
-                    OmegaConf.save(self._config, f)
-                else:
-                    yaml.dump(self._config.to_dict(), f)
+        # 保存更新后的配置到文件
+        with open(self._config_path, 'w') as f:
+            if self._model_type == 'htdemucs':
+                OmegaConf.save(self._config, f)
+            else:
+                yaml.dump(self._config.to_dict(), f)
 
-            logger.info("Parameters written back to config file successfully, start inferencing...")
+        logger.info("Parameters written back to config file successfully, start inferencing...")
 
-            store_dirs = self.generate_output_path()
-            logger.info(f"store_dirs: {store_dirs}")
-            input_path = self.generate_input_path()
-            logger.info(f"input_path: {input_path}")
+        self.generate_output_path()
+        logger.info(f"store_dirs: {self.store_dirs}")
+        logger.info(f"input_path: {self.input_path}")
 
-            msst_separate = ComfyMSST(
-                model_type=self._model_type,
-                config_path=self._config_path,
-                model_path=os.path.join("./pretrain", self._model_class, self._model_name),
-                output_format=self.get_selected_format(),
-                store_dirs=store_dirs,
-                use_tta=use_tta,
-                normalize=self._config.inference['normalize'],
-            )
+        msst_separate = ComfyMSST(
+            model_type=self._model_type,
+            config_path=self._config_path,
+            model_path=os.path.join("./pretrain", self._model_class, self._model_name),
+            output_format=self.get_selected_format(),
+            store_dirs=self.store_dirs,
+            use_tta=use_tta,
+        )
 
-            msst_separate.process_folder(input_folder=input_path)
-            logger.info("Inference completed successfully.")
+        msst_separate.process_folder(input_folder=self.input_path)
+        logger.info("Inference completed successfully.")
 
-        except Exception as e:
-            print(f"Error during execution: {e}")
-
-    def generate_output_path(self):
-        store_dirs = {}
+    def generate_output_path(self) -> None:
         for output_port in self.output_ports:
             if output_port.is_connected():
                 for connected_port in output_port.connected_ports:
-                    store_dirs[output_port.port_label] = []
+                    self.store_dirs[output_port.port_label] = []
                     parent_node = connected_port.parent_node
-                    if isinstance(parent_node, OutputNode):
-                        store_dirs[output_port.port_label].append(parent_node.output_path)
-                    elif isinstance(parent_node, ModelNode):
-                        store_dirs[output_port.port_label].append(
-                            os.path.join(TEMP_PATH, f"model_node_{parent_node.index}"))
-        return store_dirs
+                    if parent_node.__class__.__name__ == "OutputNode":
+                        parent_node.run()
+                        self.store_dirs[output_port.port_label].append(parent_node.output_path)
+                    else:
+                        path = os.path.join(TEMP_PATH, f"model_node_{parent_node.index}", output_port.port_label)
+                        self.store_dirs[output_port.port_label].append(path)
+                        if parent_node.input_path == None:
+                            parent_node.input_path = path
+                        else:
+                            raise ValueError("One model node should only have one input path.")
 
-    def generate_input_path(self):
-        if len(self.input_ports[0].connected_ports) == 1:
-            input_path = self.input_ports[0].connected_ports[0].port_value
-        else:
-            raise ValueError("One model node should only have one input path.")
-        return input_path
-
-
+ 
 class VRModelNode(ModelNode):
     def __init__(self, model_class=None, model_name=None, input_ports=None, param_ports=None, output_ports=None, bool_ports=None, scene=None, parent=None, upstream_node=None, downstream_nodes=None):
         super().__init__(model_class, model_name, input_ports, param_ports, output_ports, bool_ports, scene, parent, upstream_node, downstream_nodes)
@@ -333,10 +326,9 @@ class VRModelNode(ModelNode):
             }
             logger.info(f"VR parameters: {vr_params}")
 
-            store_dirs = self.generate_output_path()
-            input_path = self.generate_input_path()
-            logger.info(f"Input path: {input_path}")
-            logger.info(f"Output path: {store_dirs}")
+            self.generate_output_path()
+            logger.info(f"Input path: {self.input_path}")
+            logger.info(f"Output path: {self.store_dirs}")
 
             normalization_threshold = self.find_port_value("Normalization")
             logger.info(f"Normalization threshold: {normalization_threshold}")
@@ -353,10 +345,10 @@ class VRModelNode(ModelNode):
                 invert_using_spec=invert_spect,
                 use_cpu=use_cpu,
                 vr_params=vr_params,
-                store_dirs=store_dirs
+                store_dirs=self.store_dirs
             )
 
-            vr_separator.separate(folder_path=input_path)
+            vr_separator.separate(folder_path=self.input_path)
             logger.info("Inference completed successfully.")
 
         except Exception as e:
@@ -366,21 +358,19 @@ class VRModelNode(ModelNode):
         port = next((p for p in self.param_ports + self.bool_ports if p.port_label == port_label), None)
         return port.port_value if port else None
 
-    def generate_input_path(self):
-        if self.input_ports and len(self.input_ports[0].connected_ports) == 1:
-            return self.input_ports[0].connected_ports[0].port_value
-        else:
-            raise ValueError("One model node should only have one input path.")
-
-    def generate_output_path(self):
-        store_dirs = {}
+    def generate_output_path(self) -> None:
         for output_port in self.output_ports:
             if output_port.is_connected():
-                store_dirs[output_port.port_label] = []
                 for connected_port in output_port.connected_ports:
+                    self.store_dirs[output_port.port_label] = []
                     parent_node = connected_port.parent_node
-                    if isinstance(parent_node, OutputNode):
-                        store_dirs[output_port.port_label].append(parent_node.output_path)
-                    elif isinstance(parent_node, ModelNode):
-                        store_dirs[output_port.port_label].append(os.path.join(TEMP_PATH, f"model_node_{parent_node.index}"))
-        return store_dirs
+                    if parent_node.__class__.__name__ == "OutputNode":
+                        parent_node.run()
+                        self.store_dirs[output_port.port_label].append(parent_node.output_path)
+                    else:
+                        path = os.path.join(TEMP_PATH, f"model_node_{parent_node.index}", output_port.port_label)
+                        self.store_dirs[output_port.port_label].append(path)
+                        if parent_node.input_path == None:
+                            parent_node.input_path = path
+                        else:
+                            raise ValueError("One model node should only have one input path.")

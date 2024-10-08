@@ -43,10 +43,11 @@ class InputNode(DataFlowNode):
     def __init__(self, title = 'Input Folder', input_ports = None, param_ports = None, output_ports = None,
                  bool_ports = None, scene = None, parent = None, upstream_node = None):
         super().__init__(title, input_ports, param_ports, output_ports, bool_ports, scene, parent, upstream_node)
-        self.input_path = None
+        
 
     def update_ports(self):
-        param_port = ParamPort("Path", default_value = "input/")
+        self.input_path = "input/"
+        param_port = ParamPort("Path", default_value = self.input_path)
         self.param_ports.append(param_port)
         output_port = OutputPort("")
         self.output_ports.append(output_port)
@@ -57,28 +58,33 @@ class InputNode(DataFlowNode):
         output_port.setPos(self._node_width - output_port._port_width - self.port_padding,
                            self.title_height + self.port_padding * 2)
 
-    def get_input_path(self):
+    def run(self):
         self.input_path = self.param_ports[0].port_value
-        return self.input_path
+        for downstream_port in self.output_ports[0].connected_ports:
+            if downstream_port.parent_node.__class__.__name__ != "OutputNode":
+                downstream_port.parent_node.input_path = self.input_path
+        print("Input Path:", self.input_path)
 
 
 class OutputNode(DataFlowNode):
     def __init__(self, title = 'Output Folder', input_ports = None, param_ports = None, output_ports = None,
                  bool_ports = None, scene = None, parent = None, upstream_node = None):
         super().__init__(title, input_ports, param_ports, output_ports, bool_ports, scene, parent, upstream_node)
-        self.output_path = None
+        
 
     def update_ports(self):
+        self.output_path = "output/"
         input_port = InputPort("")
         self.input_ports.append(input_port)
         input_port.add_to_parent_node(self, self._scene)
         input_port.setPos(self.port_padding, self.title_height + self.port_padding * 2)
 
-        param_port = ParamPort("Path", default_value = "output/")
+        param_port = ParamPort("Path", default_value = self.output_path)
         self.param_ports.append(param_port)
         param_port.add_to_parent_node(self, self._scene)
         param_port.setPos(self.port_padding * 2 + input_port._port_width, self.title_height + self.port_padding * 2)
-
-    def get_output_path(self):
+    
+    def run(self):
         self.output_path = self.param_ports[0].port_value
-        return self.output_path
+        print("Output Path:", self.output_path)
+
