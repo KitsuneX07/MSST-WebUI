@@ -222,6 +222,8 @@ class ComfyUIView(QGraphicsView):
         for item in selected_items:
             if item in self.edges:
                 self.edges.remove(item)
+                item._source_port.remove_edge()
+                item._des_port.remove_edge()
                 item.update()
             elif item in self.nodes:
                 if item == self.input_node:

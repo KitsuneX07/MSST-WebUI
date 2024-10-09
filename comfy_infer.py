@@ -364,10 +364,11 @@ class ComfyVRSeparator(VRSeparator):
 
         if self.common_config["store_dirs"].get(stem_name):
             store_dir = self.common_config["store_dirs"][stem_name]
-            if store_dir:
-                if self.audio_file_path:
-                    file_name = f"{self.audio_file_base}_{stem_name}"
-                    save_audio(stem_source, 44100, self.common_config["output_format"], file_name, store_dir)
+            if store_dir and len(store_dir) > 0:
+                for dir in store_dir:
+                    if self.audio_file_path:
+                        file_name = f"{self.audio_file_base}_{stem_name}"
+                        save_audio(stem_source, 44100, self.common_config["output_format"], file_name, dir)
 
         return stem_source
 
