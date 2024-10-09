@@ -105,6 +105,7 @@ class ComfyUIEditor(QWidget):
         if item.childCount() > 0:
             return
         model_info = item.data(0, Qt.UserRole)
+        print("Add model node:", model_info)
         pos = [100, 100]
         self.view.create_node(model_info, pos)
 
